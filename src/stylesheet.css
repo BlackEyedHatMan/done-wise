@@ -1,0 +1,33 @@
+.done-wise-header {
+    font-weight: bold;
+}
+
+.done-wise-quick-add StEntry {
+    min-width: 240px;
+}
+
+.done-wise-group-header {
+    font-weight: bold;
+}
+
+.done-wise-count-badge {
+    background-color: rgba(128, 128, 128, 0.25);
+    border-radius: 10px;
+    padding: 0 7px;
+    font-size: 0.85em;
+}
+
+.done-wise-task-done {
+    font-style: italic;
+}
+
+.done-wise-action-strip StButton {
+    padding: 2px 8px;
+    border-radius: 6px;
+    background-color: rgba(128, 128, 128, 0.15);
+    margin: 2px;
+}
+
+.done-wise-action-strip StButton:hover {
+    background-color: rgba(128, 128, 128, 0.35);
+}

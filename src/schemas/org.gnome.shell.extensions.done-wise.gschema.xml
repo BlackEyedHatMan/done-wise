@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.done-wise" path="/org/gnome/shell/extensions/done-wise/">
+    <key name="provider-url" type="s">
+      <default>""</default>
+      <summary>Provider endpoint URL</summary>
+      <description>Base URL of a service implementing the DoneWise provider contract. Empty means standalone mode (no sync).</description>
+    </key>
+    <key name="provider-token" type="s">
+      <default>""</default>
+      <summary>Provider bearer token</summary>
+      <description>App token sent as "Authorization: Bearer …" on every provider request.</description>
+    </key>
+    <key name="poll-interval-seconds" type="i">
+      <default>300</default>
+      <range min="30" max="3600"/>
+      <summary>Poll interval</summary>
+      <description>Seconds between provider board polls.</description>
+    </key>
+    <key name="retention-days" type="i">
+      <default>7</default>
+      <range min="1" max="90"/>
+      <summary>Completed-task retention</summary>
+      <description>Completed tasks are purged this many days after their completion has been acknowledged.</description>
+    </key>
+  </schema>
+</schemalist>

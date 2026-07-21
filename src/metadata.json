@@ -1,0 +1,10 @@
+{
+  "uuid": "done-wise@blackeyedhatman.com",
+  "name": "DoneWise",
+  "description": "Intelligent task prioritization for a calmer, more focused day. Todos live in a top-bar popup, organised into context groups with red/amber/green priorities — managed by you, or by any AI agent speaking the DoneWise provider contract.",
+  "shell-version": ["46", "47", "48", "49", "50"],
+  "settings-schema": "org.gnome.shell.extensions.done-wise",
+  "gettext-domain": "done-wise",
+  "url": "https://github.com/BlackEyedHatMan/done-wise",
+  "version-name": "0.1"
+}
