@@ -1,0 +1,22 @@
+# Example ingress. TLS is expected to terminate at your reverse proxy
+# (as with a wildcard cert on an edge proxy); no tls block or ssl-redirect
+# here for that reason — adjust to taste.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: done-wise-adapter
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: donewise.example.local # ← change me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: done-wise-adapter
+                port:
+                  name: http
