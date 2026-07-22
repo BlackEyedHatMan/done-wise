@@ -54,16 +54,16 @@
         <mxCell id="k8s" value="octal Kubernetes cluster" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;verticalAlign=top;fontSize=13;fontStyle=1;align=left;spacing=10;" vertex="1" parent="1">
           <mxGeometry x="700" y="100" width="380" height="500" as="geometry" />
         </mxCell>
-        <mxCell id="ingress" value="nginx-ingress&#10;(NodePort :30080)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+        <mxCell id="ingress" value="contour ingress&#10;(NodePort :30080)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="740" y="150" width="180" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="adapter2" value="&lt;b&gt;done-wise adapter&lt;/b&gt;&#10;hermes namespace · :8080&#10;PVC: board.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+        <mxCell id="adapter2" value="&lt;b&gt;done-wise adapter&lt;/b&gt;&#10;done-wise namespace · :8080&#10;NFS PVC: board.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="740" y="270" width="300" height="90" as="geometry" />
         </mxCell>
         <mxCell id="estelle" value="&lt;b&gt;Estelle pod&lt;/b&gt;&#10;hermes-agent v2026.7.20&#10;todo skill → curls the adapter&#10;(built-in todo toolset disabled)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="740" y="430" width="300" height="110" as="geometry" />
         </mxCell>
-        <mxCell id="f1" value="HTTPS donewise.octal.castlenet.local&#10;Bearer: app token" style="endArrow=classic;html=1;fontSize=11;" edge="1" parent="1" source="desktop" target="npm">
+        <mxCell id="f1" value="HTTPS done-wise.octal.castlenet.local&#10;Bearer: app token" style="endArrow=classic;html=1;fontSize=11;" edge="1" parent="1" source="desktop" target="npm">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="f2" value="HTTP → worker :30080" style="endArrow=classic;html=1;fontSize=11;exitX=1;exitY=0.3;entryX=0;entryY=0.5;" edge="1" parent="1" source="npm" target="ingress">
@@ -75,7 +75,7 @@
         <mxCell id="f4" value="in-cluster DNS :8080&#10;GET / PUT · Bearer: agent token" style="endArrow=classic;html=1;fontSize=11;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="estelle" target="adapter2">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="n2" value="Caveat (as of 2026-07-22): hermes.octal.castlenet.local currently hits the NPM default site — the donewise.octal host entry must be added in NPM when the adapter is deployed. Fallback for testing: kubectl port-forward." style="text;html=1;fontSize=11;align=left;verticalAlign=top;spacing=6;fillColor=#fff2cc;strokeColor=#d6b656;rounded=1;" vertex="1" parent="1">
+        <mxCell id="n2" value="Caveat (as of 2026-07-22): hermes.octal.castlenet.local currently hits the NPM default site — the done-wise.octal host entry must be added in NPM when the adapter is deployed. Fallback for testing: kubectl port-forward." style="text;html=1;fontSize=11;align=left;verticalAlign=top;spacing=6;fillColor=#fff2cc;strokeColor=#d6b656;rounded=1;" vertex="1" parent="1">
           <mxGeometry x="70" y="480" width="560" height="70" as="geometry" />
         </mxCell>
       </root>

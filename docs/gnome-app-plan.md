@@ -54,12 +54,14 @@ added tasks. No provider configured ⇒ pure standalone mode.
 - Division of authority: the **app owns done-state and task creation**; the **agent owns
   grouping, group names/priorities, ordering, and titles**. The adapter enforces this.
 
-### 4. Estelle (first consumer — lives outside this repo)
+### 4. Estelle (first consumer)
 
 Estelle's only native API is an LLM chat endpoint (slow, budget-capped) and her todo
-state is freeform markdown — unusable for polling. Her operator deploys the adapter to
-the cluster and updates her todo skill to curl it. All of that wiring (kustomize
-overlay, ArgoCD Application, secrets, skill update) belongs to her repo, not this one.
+state is freeform markdown — unusable for polling. The adapter deploys to the octal
+cluster straight from this repo via the expense-tracker GitOps pattern
+([deploy-octal.md](deploy-octal.md): CI → GHCR → tag bump → ArgoCD auto-sync on
+`deploy/k8s/`). What remains in *her* repo (ai-agents) is only the agent side:
+her todo-skill rewrite to curl the adapter, and the agent token in her secrets.
 
 ## UI design (popup)
 

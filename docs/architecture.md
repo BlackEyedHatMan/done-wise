@@ -64,8 +64,8 @@ Resilience built into that flow:
 ## Scenario A — agent on the home cluster
 
 Everything stays inside the LAN; nothing is exposed to the internet. The
-adapter deploys next to the agent (for Estelle: the `hermes` namespace) and
-the agent curls it over in-cluster DNS.
+adapter deploys in its own `done-wise` namespace via ArgoCD (see
+[deploy-octal.md](deploy-octal.md)) and the agent curls it over in-cluster DNS.
 
 ```mermaid
 flowchart LR
@@ -73,18 +73,18 @@ flowchart LR
         Desktop["GNOME desktop<br/>DoneWise extension"]
         NPM["NPM reverse proxy<br/>192.168.8.90 · TLS *.octal"]
         subgraph K8S["octal Kubernetes cluster"]
-            Ingress["nginx-ingress<br/>NodePort :30080"]
-            Adapter["done-wise adapter<br/>:8080 · hermes ns"]
+            Ingress["contour ingress<br/>NodePort :30080"]
+            Adapter["done-wise adapter<br/>:8080 · done-wise ns"]
             Estelle["Estelle pod<br/>hermes-agent"]
         end
     end
-    Desktop -- "HTTPS donewise.octal.castlenet.local<br/>(app token)" --> NPM
+    Desktop -- "HTTPS done-wise.octal.castlenet.local<br/>(app token)" --> NPM
     NPM --> Ingress --> Adapter
     Estelle -- "in-cluster DNS :8080<br/>(agent token)" --> Adapter
 ```
 
 > Deployment note (July 2026): the NPM proxy needs a host entry for the
-> `donewise.octal…` hostname when the adapter is deployed — probing showed
+> `done-wise.octal…` hostname when the adapter is deployed — probing showed
 > `*.octal` names without an entry land on the NPM default page.
 > `kubectl port-forward` works as a testing fallback.
 

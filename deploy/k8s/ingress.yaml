@@ -1,0 +1,21 @@
+# TLS terminates upstream at nginx-proxy-manager (*.octal.castlenet.local
+# wildcard) — no tls block here. Chain: bind9 A record → 192.168.8.90 (NPM)
+# → worker NodePort :30080 (contour) → this Ingress.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: done-wise-adapter
+  namespace: done-wise
+spec:
+  ingressClassName: contour
+  rules:
+    - host: done-wise.octal.castlenet.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: done-wise-adapter
+                port:
+                  number: 80

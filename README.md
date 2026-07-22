@@ -35,6 +35,8 @@ REST contract. The app never knows which agent is behind the endpoint.
   "how to plug in your agent" story.
 - Architecture & deployment scenarios (LAN cluster vs cloud VPS, with
   diagrams): [docs/architecture.md](docs/architecture.md).
+- Deploying the adapter to the octal cluster (GitOps: CI → GHCR → ArgoCD):
+  [docs/deploy-octal.md](docs/deploy-octal.md).
 - Full design: [docs/gnome-app-plan.md](docs/gnome-app-plan.md).
 
 ## Install (extension)

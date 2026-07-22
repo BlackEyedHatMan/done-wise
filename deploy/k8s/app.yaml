@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: done-wise-adapter
+  namespace: done-wise
+  labels:
+    app: done-wise-adapter
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # single writer over one JSON file
+  selector:
+    matchLabels:
+      app: done-wise-adapter
+  template:
+    metadata:
+      labels:
+        app: done-wise-adapter
+    spec:
+      securityContext:
+        runAsUser: 2000
+        runAsGroup: 3000
+        fsGroup: 3000
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: adapter
+          # CI rewrites this tag (sha-<short>) on every adapter build; ArgoCD
+          # rolls the change. Never edit the tag by hand.
+          image: ghcr.io/blackeyedhatman/done-wise-adapter:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - secretRef:
+                name: done-wise-secrets # DONEWISE_APP_TOKEN / DONEWISE_AGENT_TOKEN
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: done-wise-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: done-wise-adapter
+  namespace: done-wise
+  labels:
+    app: done-wise-adapter
+spec:
+  selector:
+    app: done-wise-adapter
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

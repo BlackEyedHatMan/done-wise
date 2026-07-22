@@ -1,0 +1,39 @@
+# Static NFS PV on the operator host (no dynamic provisioner on octal).
+#
+# The directory must exist BEFORE the first sync. The NFS root is owned
+# 2000:3000, so a one-shot pod (same uid/gid as the workloads) can create it
+# without touching the operator:
+#
+#   kubectl run mkdir-done-wise --rm -it --restart=Never --image=busybox \
+#     --overrides='{"spec":{"securityContext":{"runAsUser":2000,"runAsGroup":3000},
+#       "containers":[{"name":"m","image":"busybox",
+#         "command":["mkdir","-p","/mnt/done-wise/data"],
+#         "volumeMounts":[{"name":"nfs","mountPath":"/mnt"}]}],
+#       "volumes":[{"name":"nfs","nfs":{"server":"192.168.8.90","path":"/srv/nfs/k8s"}}]}}'
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: done-wise-data-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual-nfs-done-wise-data
+  nfs:
+    server: 192.168.8.90
+    path: /srv/nfs/k8s/done-wise/data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: done-wise-data
+  namespace: done-wise
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual-nfs-done-wise-data
+  resources:
+    requests:
+      storage: 1Gi

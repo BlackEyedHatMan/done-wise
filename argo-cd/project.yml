@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: done-wise
+  namespace: argocd
+spec:
+  description: DoneWise adapter — the always-on board provider for the DoneWise GNOME app
+  sourceRepos:
+    - https://github.com/BlackEyedHatMan/done-wise.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: done-wise
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: ""
+      kind: PersistentVolume
