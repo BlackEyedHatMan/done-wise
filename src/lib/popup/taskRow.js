@@ -61,12 +61,15 @@ class DoneWiseTaskRow extends PopupMenu.PopupBaseMenuItem {
      * Deliberately does NOT chain to super.activate(): the base implementation
      * emits 'activate', which the menu answers by closing. A checkbox click
      * must keep the popup open.
+     *
+     * The row never mutates the task itself — this._task is the model's own
+     * object, and pre-flipping `done` here made Board.setDone() see a no-op
+     * (so no dirty flag, no queued PATCH, and the next pull reverted the
+     * tick). Ask the model first, then restyle from its updated state.
      */
     activate(_event) {
-        const done = !this._task.done;
-        this._task.done = done; // optimistic; the model is updated by the action
+        this._actions.onToggle(this._task.id, !this._task.done);
         this._applyDoneStyle();
-        this._actions.onToggle(this._task.id, done);
     }
 
     _applyDoneStyle() {
