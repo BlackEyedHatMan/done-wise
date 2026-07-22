@@ -10,9 +10,9 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {IndicatorState} from './constants.js';
 import {SyncState} from './syncEngine.js';
-import {BoardMenu} from './boardMenu.js';
-import {createQuickAddItem} from './quickAdd.js';
-import {NewGroupItem} from './groupHeader.js';
+import {BoardMenu} from './popup/boardMenu.js';
+import {createQuickAddItem} from './popup/quickAdd.js';
+import {NewGroupItem} from './popup/groupHeader.js';
 
 const SYNC_DOT_COLORS = {
     [SyncState.OK]: '#26a269',
