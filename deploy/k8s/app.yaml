@@ -27,7 +27,7 @@ spec:
         - name: adapter
           # CI rewrites this tag (sha-<short>) on every adapter build; ArgoCD
           # rolls the change. Never edit the tag by hand.
-          image: ghcr.io/blackeyedhatman/done-wise-adapter:latest
+          image: ghcr.io/blackeyedhatman/done-wise-adapter:sha-4d2edb3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
