@@ -82,7 +82,10 @@ class DoneWiseIndicator extends PanelMenu.Button {
             child: new St.Label({text: '●'}),
             visible: false,
         });
-        this._syncDot.connect('clicked', () => this._actions.onSyncNow());
+        this._syncDot.connect('clicked', () => {
+            this._flashSyncDot();
+            this._actions.onSyncNow();
+        });
         header.add_child(this._syncDot);
 
         const gear = new St.Button({
@@ -175,6 +178,8 @@ class DoneWiseIndicator extends PanelMenu.Button {
 
     /** @param {string} syncState one of SyncState ('idle' hides the dot) */
     setSyncState(syncState, lastError) {
+        this._lastSyncState = syncState;
+        this._lastSyncError = lastError;
         const visible = syncState !== SyncState.IDLE;
         this._syncDot.visible = visible;
         if (!visible)
@@ -183,6 +188,17 @@ class DoneWiseIndicator extends PanelMenu.Button {
         this._syncDot.accessible_name = lastError
             ? `Sync now (last error: ${lastError})`
             : 'Sync now';
+    }
+
+    /** Click feedback: lighten the dot briefly, then restore the true state. */
+    _flashSyncDot() {
+        this._syncDot.child.style = 'color: #8ff0a4;';
+        const id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 350, () => {
+            this._idleIds.delete(id);
+            this.setSyncState(this._lastSyncState ?? SyncState.OK, this._lastSyncError);
+            return GLib.SOURCE_REMOVE;
+        });
+        this._idleIds.add(id);
     }
 
     destroy() {
