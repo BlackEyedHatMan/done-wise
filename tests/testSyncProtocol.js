@@ -3,7 +3,7 @@
 import {Board} from '../src/lib/board.js';
 import {
     parseProviderBoard, pendingOperations, applyCreateResult, applyPatchResult,
-    applyDeleteResult, reconcile, localGroupIdFor, SyncFormatError,
+    applyTitleResult, applyDeleteResult, reconcile, localGroupIdFor, SyncFormatError,
 } from '../src/lib/syncProtocol.js';
 import {assertEq, assertTrue, section, finish, testDeps} from './harness.js';
 
@@ -109,6 +109,37 @@ section('delete result');
     board.data.sync.pendingDeletes = ['p-a', 'p-b'];
     applyDeleteResult(board.data, 'p-a');
     assertEq(board.data.sync.pendingDeletes, ['p-b'], 'delete dequeued');
+}
+
+section('title rename sync');
+{
+    const deps = testDeps();
+    const board = new Board(deps);
+    const t = board.addTask('old name');
+    t.providerId = 'p-t';
+    t.lastProvider = {groupId: null, position: 0, title: 'old name', done: false};
+    board.renameTask(t.id, 'new name', true);
+    const ops = pendingOperations(board.data);
+    assertEq(ops.map(o => o.op), ['setTitle'], 'rename queues a setTitle op');
+    assertEq(ops[0].title, 'new name', 'op carries the new title');
+
+    // A pull arriving before the PATCH ack must not revert the rename.
+    const pulled = parseProviderBoard(wireBoard({
+        revision: 2, groups: [], inbox: [wireTask('p-t', 'old name')],
+    }));
+    reconcile(board.data, pulled, deps);
+    assertEq(board.data.tasks[0].title, 'new name', 'dirty rename survives pull');
+
+    applyTitleResult(board.data, t.id);
+    assertEq(t.titleDirty, false, 'ack clears titleDirty');
+    assertEq(t.lastProvider.title, 'new name', 'snapshot updated');
+
+    // After ack, an agent rewrite applies again.
+    const rewritten = parseProviderBoard(wireBoard({
+        revision: 3, groups: [], inbox: [wireTask('p-t', 'Agent-tidied name')],
+    }));
+    reconcile(board.data, rewritten, deps);
+    assertEq(board.data.tasks[0].title, 'Agent-tidied name', 'agent rewrite wins after ack');
 }
 
 const PROVIDER = () => parseProviderBoard(wireBoard({

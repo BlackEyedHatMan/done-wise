@@ -105,10 +105,12 @@ offline-queue replay safe. Response: the task object plus `"revision"`.
 
 ### `PATCH /v1/tasks/{id}` — app
 
-Body: `{"done": true}` or `{"done": false}` — **`done` is the only field a PATCH may
-carry**; anything else is a `400`. The provider sets/clears `done_at`. A `2xx` response
-is the app's **sync acknowledgement** for that completion. `404` if the task no longer
-exists — the app must treat that as acknowledged (the agent already archived it).
+Body: `{"done": true|false}` and/or `{"title": "..."}` — **no other fields**;
+anything else is a `400`. The provider sets/clears `done_at` on done-flips. A `2xx`
+response is the app's **sync acknowledgement** for the change. `404` if the task no
+longer exists — the app must treat that as acknowledged (the agent already archived
+it). Title PATCHes carry user-initiated renames; the agent may still rewrite titles
+in a later `PUT` (see the authority matrix).
 
 ### `DELETE /v1/tasks/{id}` — app + agent
 
@@ -149,7 +151,8 @@ body, `401` bad/missing token, `403` app token on `PUT /v1/board`, `404` unknown
 |---|---|---|
 | Task creation | app (and agent) | `POST` → inbox; agent-new tasks arrive via `PUT` |
 | `done`, `done_at` | **app** | On `PUT`, `done` in the payload is **ignored for tasks the provider already knows** — stored done-state always wins. (Unknown tasks may arrive `done: true`, e.g. imports.) |
-| Grouping, order, group set/names/priorities, `title`, `notes` | **agent** | Only writable via `PUT`; `PATCH` accepts only `done` |
+| Grouping, order, group set/names/priorities, `notes` | **agent** | Only writable via `PUT`; `PATCH` accepts only `done` and `title` |
+| `title` | shared | User renames arrive via `PATCH`; the agent's `PUT` may later rewrite (last write wins — renames are rare, tidying is the agent's job) |
 | Task deletion | agent (by omission from `PUT`), either side via `DELETE` | See merge rule 2 |
 
 ### The merge (`PUT /v1/board` with `base_revision = B`)

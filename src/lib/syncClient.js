@@ -53,9 +53,12 @@ export class SyncClient {
         return JSON.parse(body);
     }
 
-    /** @returns {Promise<{notFound: boolean}>} 404 is a defined outcome, not an error */
-    async patchTask(id, done) {
-        const message = this._message('PATCH', `/v1/tasks/${encodeURIComponent(id)}`, {done});
+    /**
+     * @param {object} fields {done} and/or {title}
+     * @returns {Promise<{notFound: boolean}>} 404 is a defined outcome, not an error
+     */
+    async patchTask(id, fields) {
+        const message = this._message('PATCH', `/v1/tasks/${encodeURIComponent(id)}`, fields);
         const {status, body} = await this._send(message);
         if (status === 404)
             return {notFound: true};

@@ -52,6 +52,23 @@ section('setDone on provider-archived task');
     assertEq(tasks[0].done, false, 'fresh task open');
 }
 
+section('renameTask');
+{
+    const {board} = makeBoard();
+    const t = board.addTask('typo hapened');
+    board.renameTask(t.id, '  typo happened  ', true);
+    assertEq(t.title, 'typo happened', 'rename trims and applies');
+    assertEq(t.titleDirty, false, 'unposted task owes no title PATCH (create carries it)');
+    t.providerId = 'p-t';
+    board.renameTask(t.id, 'typo fixed', true);
+    assertEq(t.titleDirty, true, 'provider-known rename marks titleDirty in synced mode');
+    t.titleDirty = false;
+    board.renameTask(t.id, 'standalone rename', false);
+    assertEq(t.titleDirty, false, 'standalone rename stays local');
+    board.renameTask(t.id, '   ', true);
+    assertEq(t.title, 'standalone rename', 'blank rename rejected');
+}
+
 section('move and reorder');
 {
     const {board} = makeBoard();

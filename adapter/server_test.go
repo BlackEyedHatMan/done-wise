@@ -136,9 +136,22 @@ func TestPatchOnlyDone(t *testing.T) {
 		t.Errorf("done flip must stamp done_at: %v", task)
 	}
 
-	resp, _ = request(t, ts, "PATCH", "/v1/tasks/t1", appToken, `{"done": false, "title": "sneaky"}`, nil)
+	resp, body = request(t, ts, "PATCH", "/v1/tasks/t1", appToken, `{"done": false, "title": "renamed"}`, nil)
+	if resp.StatusCode != 200 {
+		t.Errorf("done+title PATCH: status %d, want 200", resp.StatusCode)
+	} else {
+		task = body["task"].(map[string]any)
+		if task["title"] != "renamed" || task["done"] != false {
+			t.Errorf("done+title PATCH not applied: %v", task)
+		}
+	}
+	resp, _ = request(t, ts, "PATCH", "/v1/tasks/t1", appToken, `{"title": "   "}`, nil)
 	if resp.StatusCode != 400 {
-		t.Errorf("extra PATCH field: status %d, want 400", resp.StatusCode)
+		t.Errorf("blank title PATCH: status %d, want 400", resp.StatusCode)
+	}
+	resp, _ = request(t, ts, "PATCH", "/v1/tasks/t1", appToken, `{"notes": "sneaky"}`, nil)
+	if resp.StatusCode != 400 {
+		t.Errorf("unknown PATCH field: status %d, want 400", resp.StatusCode)
 	}
 	resp, _ = request(t, ts, "PATCH", "/v1/tasks/ghost", appToken, `{"done": true}`, nil)
 	if resp.StatusCode != 404 {

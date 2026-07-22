@@ -93,6 +93,7 @@ class DoneWiseTaskRow extends PopupMenu.PopupBaseMenuItem {
             x_expand: true,
             style: 'margin-top: 4px;',
         });
+        this._addStripButton('Edit', () => this._startEdit());
         for (const target of this._moveTargets) {
             if (target.id === this._task.groupId)
                 continue;
@@ -105,6 +106,20 @@ class DoneWiseTaskRow extends PopupMenu.PopupBaseMenuItem {
         }
         this._addStripButton('Delete', () => this._actions.onDelete(this._task.id));
         this._column.add_child(this._strip);
+    }
+
+    /** Swap the label for an entry; Enter commits the rename. */
+    _startEdit() {
+        if (this._editEntry)
+            return;
+        this._editEntry = new St.Entry({text: this._task.title, x_expand: true});
+        this._editEntry.clutter_text.connect('activate', () => {
+            // The rename triggers a structural rebuild that replaces this row.
+            this._actions.onRename(this._task.id, this._editEntry.get_text());
+        });
+        this._label.hide();
+        this._label.get_parent().insert_child_above(this._editEntry, this._label);
+        this._actions.grabFocus(this._editEntry);
     }
 
     _addStripButton(label, callback) {

@@ -74,6 +74,8 @@ export class BoardMenu {
                     onMove: this._actions.onMoveTask,
                     onReorder: this._actions.onReorderTask,
                     onDelete: this._actions.onDeleteTask,
+                    onRename: this._actions.onRenameTask,
+                    grabFocus: this._grabFocus,
                 },
             }));
         }

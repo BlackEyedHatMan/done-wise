@@ -164,15 +164,35 @@ func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &req) {
 		return
 	}
-	rawDone, ok := req["done"]
-	if !ok || len(req) != 1 {
-		writeError(w, http.StatusBadRequest, "invalid", "PATCH accepts exactly one field: done")
+	if len(req) == 0 {
+		writeError(w, http.StatusBadRequest, "invalid", "PATCH accepts done and/or title")
 		return
 	}
-	var done bool
-	if err := json.Unmarshal(rawDone, &done); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid", "done must be a boolean")
-		return
+	var done *bool
+	var title *string
+	for key, raw := range req {
+		switch key {
+		case "done":
+			done = new(bool)
+			if err := json.Unmarshal(raw, done); err != nil {
+				writeError(w, http.StatusBadRequest, "invalid", "done must be a boolean")
+				return
+			}
+		case "title":
+			title = new(string)
+			if err := json.Unmarshal(raw, title); err != nil {
+				writeError(w, http.StatusBadRequest, "invalid", "title must be a string")
+				return
+			}
+			*title = strings.TrimSpace(*title)
+			if *title == "" || len(*title) > MaxTitleLength {
+				writeError(w, http.StatusBadRequest, "invalid", "title must be 1-500 characters")
+				return
+			}
+		default:
+			writeError(w, http.StatusBadRequest, "invalid", "PATCH accepts done and/or title")
+			return
+		}
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -181,14 +201,22 @@ func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not-found", "no such task")
 		return
 	}
-	if task.Done != done {
-		task.Done = done
-		if done {
+	changed := false
+	if done != nil && task.Done != *done {
+		task.Done = *done
+		if *done {
 			now := s.now()
 			task.DoneAt = &now
 		} else {
 			task.DoneAt = nil
 		}
+		changed = true
+	}
+	if title != nil && task.Title != *title {
+		task.Title = *title
+		changed = true
+	}
+	if changed {
 		s.bumpAndPersistLocked()
 	}
 	writeJSON(w, http.StatusOK, taskResponse(task, s.board.Revision))

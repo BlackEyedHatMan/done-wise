@@ -85,6 +85,10 @@ export function pendingOperations(data) {
         if (t.doneDirty && t.providerId !== null && !t.providerArchived)
             ops.push({op: 'setDone', taskId: t.id, providerId: t.providerId, done: t.done});
     }
+    for (const t of data.tasks) {
+        if (t.titleDirty && t.providerId !== null && !t.providerArchived)
+            ops.push({op: 'setTitle', taskId: t.id, providerId: t.providerId, title: t.title});
+    }
     for (const providerId of data.sync.pendingDeletes)
         ops.push({op: 'delete', providerId});
     return ops;
@@ -99,6 +103,17 @@ export function applyCreateResult(data, taskId, providerTask) {
     task.lastProvider = {groupId: null, position: 0, title: task.title, done: false};
     // Completed before the create landed → the provider still owes a PATCH.
     task.doneDirty = task.done;
+    task.titleDirty = false; // the create carried the current title
+}
+
+/** A queued title-PATCH landed. (404s route through applyPatchResult.) */
+export function applyTitleResult(data, taskId) {
+    const task = data.tasks.find(t => t.id === taskId);
+    if (!task)
+        return;
+    task.titleDirty = false;
+    if (task.lastProvider)
+        task.lastProvider.title = task.title;
 }
 
 /**
@@ -113,6 +128,7 @@ export function applyPatchResult(data, taskId, {notFound = false, idgen, now} = 
     if (!task)
         return false;
     task.doneDirty = false;
+    task.titleDirty = false;
     if (!notFound) {
         if (task.lastProvider)
             task.lastProvider.done = task.done;
@@ -138,6 +154,7 @@ export function applyPatchResult(data, taskId, {notFound = false, idgen, now} = 
         providerId: null,
         providerArchived: false,
         doneDirty: false,
+        titleDirty: false,
         lastProvider: null,
     });
     return true;
@@ -228,6 +245,7 @@ export function reconcile(data, provider, {now}) {
             providerId: pt.providerId,
             providerArchived: false,
             doneDirty: false,
+            titleDirty: false,
             lastProvider: snapshot(pt),
         });
     }
@@ -260,7 +278,8 @@ function mergeTask(task, pt, localIdByProviderGroup, now) {
         task.position = pt.index;
     }
 
-    if (base === null || pt.title !== base.title)
+    // A locally renamed title (PATCH pending) survives pulls, like doneDirty.
+    if (!task.titleDirty && (base === null || pt.title !== base.title))
         task.title = pt.title;
 
     if (!task.doneDirty && pt.done !== task.done) {

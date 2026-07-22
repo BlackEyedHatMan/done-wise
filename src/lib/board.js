@@ -60,6 +60,7 @@ export function normalize(json) {
                 providerId: typeof t.providerId === 'string' ? t.providerId : null,
                 providerArchived: t.providerArchived === true,
                 doneDirty: t.doneDirty === true,
+                titleDirty: t.titleDirty === true,
                 lastProvider: typeof t.lastProvider === 'object' ? t.lastProvider : null,
             });
         }
@@ -152,6 +153,7 @@ export class Board {
             providerId: null,
             providerArchived: false,
             doneDirty: false,
+            titleDirty: false,
             lastProvider: null,
         };
         this.data.tasks.push(task);
@@ -180,6 +182,18 @@ export class Board {
         if (syncedMode && !task.providerArchived)
             task.doneDirty = true;
         this._emit(false);
+    }
+
+    /** Rename a task; the new title is pushed to the provider via PATCH. */
+    renameTask(id, title, syncedMode = false) {
+        const task = this.task(id);
+        const trimmed = title.trim().slice(0, MAX_TITLE_LENGTH);
+        if (!task || trimmed === '' || task.title === trimmed)
+            return;
+        task.title = trimmed;
+        if (syncedMode && task.providerId !== null && !task.providerArchived)
+            task.titleDirty = true;
+        this._emit(true);
     }
 
     moveTask(id, groupId) {

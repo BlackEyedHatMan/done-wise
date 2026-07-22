@@ -2,7 +2,7 @@ import GLib from 'gi://GLib';
 
 import {
     parseProviderBoard, pendingOperations, applyCreateResult, applyPatchResult,
-    applyDeleteResult, reconcile, SyncFormatError,
+    applyTitleResult, applyDeleteResult, reconcile, SyncFormatError,
 } from './syncProtocol.js';
 import {SyncClient, SyncHttpError} from './syncClient.js';
 
@@ -150,9 +150,17 @@ export class SyncEngine {
         let structural = false;
         for (const op of pendingOperations(data)) {
             if (op.op === 'setDone') {
-                const {notFound} = await this._client.patchTask(op.providerId, op.done);
+                const {notFound} = await this._client.patchTask(op.providerId, {done: op.done});
                 structural = applyPatchResult(data, op.taskId,
                     {notFound, ...this._deps}) || structural;
+            } else if (op.op === 'setTitle') {
+                const {notFound} = await this._client.patchTask(op.providerId, {title: op.title});
+                if (notFound) {
+                    structural = applyPatchResult(data, op.taskId,
+                        {notFound: true, ...this._deps}) || structural;
+                } else {
+                    applyTitleResult(data, op.taskId);
+                }
             } else if (op.op === 'delete') {
                 await this._client.deleteTask(op.providerId);
                 applyDeleteResult(data, op.providerId);
