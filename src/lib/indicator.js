@@ -30,6 +30,10 @@ class DoneWiseIndicator extends PanelMenu.Button {
      */
     _init({extension, board, actions}) {
         super._init(0.5, 'DoneWise');
+        // Match the compact spacing of neighbouring status icons — the theme's
+        // default panel-button hpadding (12px) makes the hover pill noticeably
+        // wider than app-indicator items.
+        this.style = '-natural-hpadding: 6px; -minimum-hpadding: 6px;';
         this._extension = extension;
         this._board = board;
         this._actions = actions;
