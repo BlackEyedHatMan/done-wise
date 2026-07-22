@@ -1,0 +1,125 @@
+<mxfile host="app.diagrams.net" modified="2026-07-22T12:00:00.000Z" agent="done-wise" version="24.0.0">
+  <diagram name="1 · Sync flow" id="sync-flow">
+    <mxGraphModel dx="1200" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t0" value="Who talks to whom — every arrow points INTO the adapter. Nothing ever dials the desktop; the agent is never dialled either." style="text;html=1;fontSize=14;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="900" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="app" value="&lt;b&gt;DoneWise&lt;/b&gt;&lt;br&gt;GNOME Shell extension&lt;br&gt;&lt;br&gt;owns local board.json&lt;br&gt;(works offline / standalone)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#26a269;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="180" width="230" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="adapter" value="&lt;b&gt;Adapter (provider)&lt;/b&gt;&lt;br&gt;the only always-on piece&lt;br&gt;&lt;br&gt;holds the shared board&lt;br&gt;revision counter + ETag&lt;br&gt;two bearer tokens (app / agent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="440" y="160" width="260" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="agent" value="&lt;b&gt;AI agent (e.g. Estelle)&lt;/b&gt;&lt;br&gt;hermes-agent&lt;br&gt;&lt;br&gt;visits on its own schedule&lt;br&gt;(&amp;quot;periodic librarian&amp;quot;)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="870" y="180" width="230" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="GET /v1/board (poll, ETag → 304 when unchanged)" style="endArrow=classic;html=1;fontSize=11;exitX=1;exitY=0.2;entryX=0;entryY=0.15;" edge="1" parent="1" source="app" target="adapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="POST /v1/tasks (new task → Inbox)" style="endArrow=classic;html=1;fontSize=11;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="app" target="adapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="PATCH /v1/tasks/{id} {done}" style="endArrow=classic;html=1;fontSize=11;exitX=1;exitY=0.8;entryX=0;entryY=0.85;" edge="1" parent="1" source="app" target="adapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="GET /v1/board (read inbox + completions)" style="endArrow=classic;html=1;fontSize=11;exitX=0;exitY=0.3;entryX=1;entryY=0.25;" edge="1" parent="1" source="agent" target="adapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="PUT /v1/board (groups, priorities, order · base_revision)" style="endArrow=classic;html=1;fontSize=11;exitX=0;exitY=0.7;entryX=1;entryY=0.75;" edge="1" parent="1" source="agent" target="adapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n1" value="Authority: the app owns done-state + task creation · the agent owns grouping, group names/priorities, ordering, titles.&#10;The adapter enforces this (done sent by the agent is ignored for known tasks; base_revision protects tasks added while the agent was thinking)." style="text;html=1;fontSize=11;align=left;verticalAlign=top;spacing=6;fillColor=#f5f5f5;strokeColor=#b3b3b3;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="240" y="430" width="640" height="70" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="2 · On octal (home LAN)" id="octal-lan">
+    <mxGraphModel dx="1200" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="lan" value="Home LAN — castlenet · 192.168.8.0/24 &#160;(nothing here is reachable from the internet)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#6c8ebf;verticalAlign=top;fontSize=13;fontStyle=1;align=left;spacing=10;dashed=0;" vertex="1" parent="1">
+          <mxGeometry x="30" y="40" width="1080" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="desktop" value="&lt;b&gt;GNOME desktop&lt;/b&gt;&lt;br&gt;DoneWise extension&lt;br&gt;local board.json&lt;br&gt;&lt;br&gt;outbound requests only —&lt;br&gt;may sleep / power off freely" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#26a269;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="240" width="230" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="npm" value="&lt;b&gt;NPM reverse proxy&lt;/b&gt;&lt;br&gt;operator host 192.168.8.90&lt;br&gt;TLS: *.octal wildcard cert&lt;br&gt;(DNS: bind9, *.octal → .90)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="390" y="250" width="230" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s" value="octal Kubernetes cluster" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;verticalAlign=top;fontSize=13;fontStyle=1;align=left;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="700" y="100" width="380" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="ingress" value="nginx-ingress&#10;(NodePort :30080)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="740" y="150" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="adapter2" value="&lt;b&gt;done-wise adapter&lt;/b&gt;&#10;hermes namespace · :8080&#10;PVC: board.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="740" y="270" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="estelle" value="&lt;b&gt;Estelle pod&lt;/b&gt;&#10;hermes-agent v2026.7.20&#10;todo skill → curls the adapter&#10;(built-in todo toolset disabled)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="740" y="430" width="300" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="f1" value="HTTPS donewise.octal.castlenet.local&#10;Bearer: app token" style="endArrow=classic;html=1;fontSize=11;" edge="1" parent="1" source="desktop" target="npm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f2" value="HTTP → worker :30080" style="endArrow=classic;html=1;fontSize=11;exitX=1;exitY=0.3;entryX=0;entryY=0.5;" edge="1" parent="1" source="npm" target="ingress">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f3" value="" style="endArrow=classic;html=1;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="ingress" target="adapter2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f4" value="in-cluster DNS :8080&#10;GET / PUT · Bearer: agent token" style="endArrow=classic;html=1;fontSize=11;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="estelle" target="adapter2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n2" value="Caveat (as of 2026-07-22): hermes.octal.castlenet.local currently hits the NPM default site — the donewise.octal host entry must be added in NPM when the adapter is deployed. Fallback for testing: kubectl port-forward." style="text;html=1;fontSize=11;align=left;verticalAlign=top;spacing=6;fillColor=#fff2cc;strokeColor=#d6b656;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="480" width="560" height="70" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="3 · Agent in the cloud (VPS)" id="cloud-vps">
+    <mxGraphModel dx="1200" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="home" value="Home LAN — castlenet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#6c8ebf;verticalAlign=top;fontSize=13;fontStyle=1;align=left;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="30" y="120" width="330" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="desktop3" value="&lt;b&gt;GNOME desktop&lt;/b&gt;&lt;br&gt;DoneWise extension&lt;br&gt;local board.json&lt;br&gt;&lt;br&gt;only OUTBOUND https —&lt;br&gt;no port-forward, no VPN needed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#26a269;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="180" width="250" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="inet" value="Internet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#c07a1c;dashed=1;verticalAlign=top;fontSize=13;fontStyle=1;align=left;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="450" y="60" width="660" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="vps" value="Cloud VPS (agent&amp;#39;s home)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;verticalAlign=top;fontSize=13;fontStyle=1;align=left;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="520" y="110" width="540" height="400 " as="geometry" />
+        </mxCell>
+        <mxCell id="proxy3" value="&lt;b&gt;TLS reverse proxy&lt;/b&gt;&#10;(caddy / nginx, real cert)&#10;:443" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="170" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="adapter3" value="&lt;b&gt;done-wise adapter&lt;/b&gt;&#10;localhost :8080&#10;board.json on VPS disk" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="320" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="agent3" value="&lt;b&gt;AI agent&lt;/b&gt;&#10;hermes-agent (or any other)&#10;curls localhost" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="830" y="320" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="g1" value="outbound HTTPS + Bearer (app token)&#10;same contract, just a different URL in settings" style="endArrow=classic;html=1;fontSize=11;exitX=1;exitY=0.4;entryX=0;entryY=0.5;" edge="1" parent="1" source="desktop3" target="proxy3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="g2" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="proxy3" target="adapter3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="g3" value="localhost :8080 (agent token)" style="endArrow=classic;html=1;fontSize=11;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="agent3" target="adapter3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n3" value="Rule of thumb: the adapter lives WHERE THE AGENT LIVES. Agent on octal → adapter on octal (page 2). Agent on a VPS → adapter on the VPS: the desktop simply polls out over the internet, exactly as it polls the LAN — nothing at home needs exposing.&#10;&#10;Alternative (not recommended): keep the adapter on octal with a cloud agent — the agent then needs a route INTO the LAN (Tailscale/VPN or a port-forward), and todo sync breaks whenever the home link is down." style="text;html=1;fontSize=11;align=left;verticalAlign=top;spacing=6;fillColor=#f5f5f5;strokeColor=#b3b3b3;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="480" width="360" height="170" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

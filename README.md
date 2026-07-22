@@ -33,6 +33,8 @@ REST contract. The app never knows which agent is behind the endpoint.
   always-on middleman any agent operator can deploy; the
   [agent integration guide](docs/agent-integration-guide.md) is the whole
   "how to plug in your agent" story.
+- Architecture & deployment scenarios (LAN cluster vs cloud VPS, with
+  diagrams): [docs/architecture.md](docs/architecture.md).
 - Full design: [docs/gnome-app-plan.md](docs/gnome-app-plan.md).
 
 ## Install (extension)
