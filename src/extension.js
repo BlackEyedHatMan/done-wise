@@ -3,6 +3,7 @@ import GLib from 'gi://GLib';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
+import {showAboutDialog} from './lib/aboutDialog.js';
 import {IndicatorState} from './lib/constants.js';
 import {Board} from './lib/board.js';
 import {purge} from './lib/retention.js';
@@ -109,6 +110,7 @@ export default class DoneWiseExtension extends Extension {
             onMoveGroup: (id, delta) => this._board.moveGroupBy(id, delta),
             onDeleteGroup: id => this._board.deleteGroup(id),
             onSyncNow: () => this._syncEngine.syncNow(),
+            onAbout: () => showAboutDialog(this),
         };
     }
 

@@ -58,8 +58,15 @@ class DoneWiseIndicator extends PanelMenu.Button {
     }
 
     _buildMenu() {
-        // Header: DoneWise · sync dot · gear.
+        // Header: robot · DoneWise · sync dot · gear.
         const header = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
+        header.add_child(new St.Icon({
+            gicon: Gio.icon_new_for_string(GLib.build_filenamev(
+                [this._extension.path, 'icons', 'done-wise-robot.png'])),
+            icon_size: 28,
+            style: 'margin-right: 8px;',
+            y_align: Clutter.ActorAlign.CENTER,
+        }));
         header.add_child(new St.Label({
             text: 'DoneWise',
             style_class: 'done-wise-header',
@@ -122,6 +129,10 @@ class DoneWiseIndicator extends PanelMenu.Button {
             onCreate: name => this._actions.onAddGroup(name),
             grabFocus: e => this._grabFocus(e),
         }));
+
+        const aboutItem = new PopupMenu.PopupMenuItem('About DoneWise');
+        aboutItem.connect('activate', () => this._actions.onAbout());
+        this.menu.addMenuItem(aboutItem);
 
         this.rebuild();
     }

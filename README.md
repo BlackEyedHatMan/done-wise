@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/artwork/done-wise-branding.png" alt="DoneWise" width="360"></p>
+
 # DoneWise
 
 Intelligent task prioritization for a calmer, more focused day.
