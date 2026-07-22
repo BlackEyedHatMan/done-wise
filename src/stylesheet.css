@@ -21,6 +21,21 @@
     font-style: italic;
 }
 
+/* Compact rows: the shell theme's .icon-button pads the "⋯" into a fat
+   circle, which inflates every row. Flatten it and trim row padding so
+   the list stays dense. */
+.done-wise-task-row {
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+
+.done-wise-task-row .icon-button {
+    padding: 1px 5px;
+    border-radius: 6px;
+    min-height: 0;
+    min-width: 0;
+}
+
 .done-wise-action-strip StButton {
     padding: 2px 8px;
     border-radius: 6px;
