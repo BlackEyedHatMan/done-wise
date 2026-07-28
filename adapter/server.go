@@ -116,6 +116,25 @@ func (s *Server) handlePutBoard(w http.ResponseWriter, r *http.Request) {
 			fmt.Sprintf("If-Match failed: board is at revision %d", s.board.Revision))
 		return
 	}
+	// Title guard (2026-07-27 incident): a PUT whose tasks are incomplete
+	// objects — e.g. id-only references — must never blank stored titles.
+	// PUT semantics stay "the payload is the state"; incomplete payloads are
+	// rejected outright rather than silently repaired from the store.
+	if existingIDs, blankNew := payload.BlankTitleTasks(s.board); len(existingIDs) > 0 || blankNew > 0 {
+		message := fmt.Sprintf(
+			"PUT would blank the title of %d existing task(s); tasks in a PUT must be complete objects",
+			len(existingIDs))
+		if len(existingIDs) == 0 {
+			message = fmt.Sprintf(
+				"PUT contains %d new task(s) with a missing/empty title", blankNew)
+		}
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error":    "task_title_missing",
+			"message":  message,
+			"task_ids": existingIDs,
+		})
+		return
+	}
 	s.board = Merge(s.board, payload, s.now())
 	s.persistLocked()
 	writeJSON(w, http.StatusOK, map[string]any{"revision": s.board.Revision})

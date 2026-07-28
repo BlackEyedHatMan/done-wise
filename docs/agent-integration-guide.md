@@ -65,6 +65,13 @@ already knows.
 
 ## Rules you must respect
 
+- **Send complete task objects in your `PUT` — never id-only references.**
+  The PUT replaces whole-board state: fields you omit are erased, not
+  preserved. A payload task with a missing/empty `title` is rejected with
+  `400 task_title_missing` (listing the affected `task_ids`) and the board
+  is left untouched — so the mistake fails loudly instead of destroying
+  titles, but the correct pattern is to echo each task exactly as you read
+  it, changed only where you mean to change it.
 - **Never invent or rewrite task ids.** Keep the id you read; changing it is
   a delete plus an unrelated create.
 - **Omission = archival.** Any task you saw (it existed at `base_revision`)

@@ -138,6 +138,35 @@ func (bd *Board) allTasks() map[string]*Task {
 	return tasks
 }
 
+// BlankTitleTasks scans a PUT payload for tasks with a missing or
+// whitespace-only title. Returns the ids of affected tasks that already
+// exist on the stored board (whose titles the PUT would blank) and the
+// count of blank-titled new tasks. Both must be zero for the PUT to be
+// acceptable — omitting a task entirely (archival) is unaffected.
+func (p PutPayload) BlankTitleTasks(stored *Board) (existingIDs []string, blankNew int) {
+	existingIDs = []string{}
+	known := stored.allTasks()
+	check := func(t Task) {
+		if strings.TrimSpace(t.Title) != "" {
+			return
+		}
+		if _, ok := known[t.ID]; t.ID != "" && ok {
+			existingIDs = append(existingIDs, t.ID)
+		} else {
+			blankNew++
+		}
+	}
+	for _, g := range p.Groups {
+		for _, t := range g.Tasks {
+			check(t)
+		}
+	}
+	for _, t := range p.Inbox {
+		check(t)
+	}
+	return existingIDs, blankNew
+}
+
 // Merge applies an agent PUT to the stored board (contract §"The merge"):
 //
 //  1. task in payload and known         → organisation from payload, done-state from store

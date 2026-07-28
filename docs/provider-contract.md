@@ -133,6 +133,26 @@ The agent's bulk verb: replace the board's *organisation* in one call.
 This is **not a blind overwrite** — the provider merges (below). Optional strict mode:
 send `If-Match: "<revision>"` to get a `409` instead of a merge; usually unnecessary.
 
+**Every task in the payload must be a complete object** — the PUT replaces
+whole-board state, so fields you omit are *not preserved* from the store (the one
+exception is `done`/`done_at`, which the store always wins — see the authority
+matrix). In particular, a task present in the payload with a missing or empty
+`title` is rejected: the provider answers `400` with a machine-readable error and
+leaves the board (and its revision) untouched:
+
+```json
+{
+  "error": "task_title_missing",
+  "message": "PUT would blank the title of 3 existing task(s); tasks in a PUT must be complete objects",
+  "task_ids": ["4d9fdbf6…", "…"]
+}
+```
+
+The same error covers *new* tasks with a blank title. Leaving a task **out** of
+the payload entirely is unaffected — that remains the documented archival
+mechanism. (Guard added after a real incident: an agent PUT of id-only task
+references blanked every stored title.)
+
 ### `GET /healthz` — no auth
 
 `200 {"status": "ok", "revision": N}`.

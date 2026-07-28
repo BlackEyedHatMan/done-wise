@@ -197,6 +197,117 @@ func TestPutRequiresBaseRevisionAndMerges(t *testing.T) {
 	}
 }
 
+// putBoard fetches the current board and returns it re-marshalled as a PUT
+// payload echoing the given base revision.
+func boardAsPutPayload(t *testing.T, ts *httptest.Server) (string, float64) {
+	t.Helper()
+	_, board := request(t, ts, "GET", "/v1/board", appToken, "", nil)
+	payload := map[string]any{
+		"base_revision": board["revision"],
+		"groups":        board["groups"],
+		"inbox":         board["inbox"],
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(raw), board["revision"].(float64)
+}
+
+func TestPutEchoBackUnchanged(t *testing.T) {
+	ts := newTestServer(t)
+	request(t, ts, "POST", "/v1/tasks", appToken, `{"id": "t1", "title": "keep me"}`, nil)
+	payload, _ := boardAsPutPayload(t, ts)
+	resp, _ := request(t, ts, "PUT", "/v1/board", agentToken, payload, nil)
+	if resp.StatusCode != 200 {
+		t.Fatalf("echoing the board back must succeed, got %d", resp.StatusCode)
+	}
+	_, board := request(t, ts, "GET", "/v1/board", appToken, "", nil)
+	if title := board["inbox"].([]any)[0].(map[string]any)["title"]; title != "keep me" {
+		t.Fatalf("title mangled by echo PUT: %v", title)
+	}
+}
+
+func TestPutRejectsBlankedExistingTitle(t *testing.T) {
+	ts := newTestServer(t)
+	request(t, ts, "POST", "/v1/tasks", appToken, `{"id": "t1", "title": "precious"}`, nil)
+	for _, blank := range []string{`{"id": "t1"}`, `{"id": "t1", "title": ""}`, `{"id": "t1", "title": "  "}`} {
+		put := fmt.Sprintf(`{"base_revision": 1, "groups": [{"id": "g", "name": "G",
+			"tasks": [%s]}], "inbox": []}`, blank)
+		resp, body := request(t, ts, "PUT", "/v1/board", agentToken, put, nil)
+		if resp.StatusCode != 400 || body["error"] != "task_title_missing" {
+			t.Fatalf("payload %s: status %d error %v, want 400 task_title_missing",
+				blank, resp.StatusCode, body["error"])
+		}
+		ids := body["task_ids"].([]any)
+		if len(ids) != 1 || ids[0] != "t1" {
+			t.Errorf("payload %s: task_ids = %v, want [t1]", blank, ids)
+		}
+	}
+	// Board unchanged, revision not incremented.
+	_, board := request(t, ts, "GET", "/v1/board", appToken, "", nil)
+	if board["revision"].(float64) != 1 {
+		t.Errorf("rejected PUTs must not bump revision, got %v", board["revision"])
+	}
+	if title := board["inbox"].([]any)[0].(map[string]any)["title"]; title != "precious" {
+		t.Errorf("title damaged by rejected PUT: %v", title)
+	}
+}
+
+func TestPutOmissionStillArchives(t *testing.T) {
+	ts := newTestServer(t)
+	request(t, ts, "POST", "/v1/tasks", appToken, `{"id": "t1", "title": "seen and archived"}`, nil)
+	resp, _ := request(t, ts, "PUT", "/v1/board", agentToken,
+		`{"base_revision": 1, "groups": [], "inbox": []}`, nil)
+	if resp.StatusCode != 200 {
+		t.Fatalf("omission PUT: status %d", resp.StatusCode)
+	}
+	_, board := request(t, ts, "GET", "/v1/board", appToken, "", nil)
+	if len(board["inbox"].([]any)) != 0 {
+		t.Error("omitting a task must still archive it")
+	}
+}
+
+func TestPutRejectsBlankTitledNewTask(t *testing.T) {
+	ts := newTestServer(t)
+	resp, body := request(t, ts, "PUT", "/v1/board", agentToken,
+		`{"base_revision": 0, "groups": [{"id": "g", "name": "G",
+			"tasks": [{"title": "  "}]}], "inbox": []}`, nil)
+	if resp.StatusCode != 400 || body["error"] != "task_title_missing" {
+		t.Fatalf("blank new task: status %d error %v, want 400 task_title_missing",
+			resp.StatusCode, body["error"])
+	}
+}
+
+// TestPutTitleWipeIncident20260727 replays the payload shape from the
+// 2026-07-27 incident: every task an id-only reference. Before the guard,
+// this blanked the titles of all existing tasks.
+func TestPutTitleWipeIncident20260727(t *testing.T) {
+	ts := newTestServer(t)
+	request(t, ts, "POST", "/v1/tasks", appToken, `{"id": "a", "title": "task a"}`, nil)
+	request(t, ts, "POST", "/v1/tasks", appToken, `{"id": "b", "title": "task b"}`, nil)
+	request(t, ts, "POST", "/v1/tasks", appToken, `{"id": "c", "title": "task c"}`, nil)
+	resp, body := request(t, ts, "PUT", "/v1/board", agentToken,
+		`{"base_revision": 3, "groups": [{"id": "prime", "name": "Prime", "priority": "high",
+			"tasks": [{"id": "a"}, {"id": "b"}, {"id": "c"}]}], "inbox": []}`, nil)
+	if resp.StatusCode != 400 || body["error"] != "task_title_missing" {
+		t.Fatalf("incident payload: status %d error %v, want 400 task_title_missing",
+			resp.StatusCode, body["error"])
+	}
+	if ids := body["task_ids"].([]any); len(ids) != 3 {
+		t.Errorf("task_ids = %v, want all three", ids)
+	}
+	_, board := request(t, ts, "GET", "/v1/board", appToken, "", nil)
+	for _, raw := range board["inbox"].([]any) {
+		if task := raw.(map[string]any); task["title"] == "" {
+			t.Errorf("task %v lost its title", task["id"])
+		}
+	}
+	if board["revision"].(float64) != 3 {
+		t.Errorf("revision must be untouched, got %v", board["revision"])
+	}
+}
+
 func TestPutIfMatchConflict(t *testing.T) {
 	ts := newTestServer(t)
 	request(t, ts, "POST", "/v1/tasks", appToken, `{"id": "t1", "title": "x"}`, nil)
