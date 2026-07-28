@@ -232,6 +232,10 @@ export function reconcile(data, provider, {now}) {
     for (const pt of provider.tasks) {
         if (consumed.has(pt.providerId))
             continue;
+        // Defensive: never create a local task with a blank title (provider
+        // bug); it will be picked up on a later pull once the title exists.
+        if (pt.title.trim() === '')
+            continue;
         kept.push({
             id: pt.providerId,
             title: pt.title,
@@ -279,7 +283,10 @@ function mergeTask(task, pt, localIdByProviderGroup, now) {
     }
 
     // A locally renamed title (PATCH pending) survives pulls, like doneDirty.
-    if (!task.titleDirty && (base === null || pt.title !== base.title))
+    // A blank provider title is never accepted — that's a provider bug (see
+    // the 2026-07-27 title-wipe incident); the local title is the backup.
+    if (!task.titleDirty && (base === null || pt.title !== base.title) &&
+        pt.title.trim() !== '')
         task.title = pt.title;
 
     if (!task.doneDirty && pt.done !== task.done) {

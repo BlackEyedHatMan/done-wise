@@ -290,6 +290,35 @@ section('reconcile: agent archival');
         'no duplicate after repeat pull');
 }
 
+section('reconcile: blank provider titles never destroy local ones');
+{
+    const deps = testDeps();
+    const board = new Board(deps);
+    reconcile(board.data, PROVIDER(), deps);
+
+    // Title-wipe shape: provider returns existing tasks with blank titles.
+    const wiped = parseProviderBoard(wireBoard({
+        revision: 99,
+        groups: [
+            {id: 'g-work', name: 'Work', priority: 'high', tasks: [wireTask('t-1', '')]},
+            {id: 'g-home', name: 'Home', priority: 'low', tasks: [wireTask('t-2', '   ')]},
+        ],
+        inbox: [wireTask('t-new-blank', '')],
+    }));
+    reconcile(board.data, wiped, deps);
+    assertEq(board.data.tasks.find(t => t.providerId === 't-1').title,
+        'reply to client', 'blank pull keeps local title');
+    assertEq(board.data.tasks.find(t => t.providerId === 't-2').title,
+        'fix tap', 'whitespace pull keeps local title');
+    assertEq(board.data.tasks.some(t => t.providerId === 't-new-blank'), false,
+        'blank-titled new provider task not created');
+
+    // Provider recovers: restored titles apply again.
+    reconcile(board.data, PROVIDER(), deps);
+    assertEq(board.data.tasks.find(t => t.providerId === 't-1').title,
+        'reply to client', 'restored board still merges cleanly');
+}
+
 section('reconcile: pending delete for a vanished task is dropped');
 {
     const deps = testDeps();
