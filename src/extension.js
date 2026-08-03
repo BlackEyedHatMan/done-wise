@@ -96,7 +96,15 @@ export default class DoneWiseExtension extends Extension {
                 this._board.renameTask(id, title, this._syncedMode);
                 this._syncEngine.kickPush();
             },
-            onReorderTask: (id, delta) => this._board.moveTaskBy(id, delta),
+            onToggleStar: id => {
+                const task = this._board.task(id);
+                if (!task)
+                    return;
+                if (this._board.setStarred(id, !task.starred, this._syncedMode))
+                    this._syncEngine.kickPush();
+            },
+            onReorderDrop: (id, targetId, above) =>
+                this._board.moveTaskRelative(id, targetId, above),
             onDeleteTask: id => {
                 this._board.deleteTask(id);
                 this._syncEngine.kickPush();

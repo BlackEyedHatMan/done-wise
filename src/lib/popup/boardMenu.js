@@ -31,19 +31,31 @@ export class BoardMenu {
             ...groups.map(g => ({id: g.id, name: g.name})),
         ];
 
-        const inboxTasks = board.tasksInGroup(null);
-        if (inboxTasks.length > 0) {
-            this._addSection(null, board.openCount(null), inboxTasks, moveTargets,
-                false);
+        // Pinned ⭐ section — a filtered view; tasks keep their real groupId.
+        const starred = board.starredTasks();
+        if (starred.length > 0) {
+            this.section.addMenuItem(new GroupHeader({
+                group: null,
+                special: {name: `Starred  ${starred.length}/3`, color: '#f5c211'},
+                count: starred.length,
+                actions: null,
+                grabFocus: this._grabFocus,
+            }));
+            for (const task of starred)
+                this._addRow(task, moveTargets, false);
         }
 
+        const inboxTasks = board.tasksInGroup(null).filter(t => !t.starred);
+        if (inboxTasks.length > 0)
+            this._addSection(null, inboxTasks, moveTargets, false);
+
         for (const group of groups) {
-            this._addSection(group, board.openCount(group.id),
-                board.tasksInGroup(group.id), moveTargets,
+            this._addSection(group,
+                board.tasksInGroup(group.id).filter(t => !t.starred), moveTargets,
                 group.providerId === null);
         }
 
-        if (groups.length === 0 && inboxTasks.length === 0) {
+        if (groups.length === 0 && inboxTasks.length === 0 && starred.length === 0) {
             const empty = new PopupMenu.PopupMenuItem('No tasks — add one above', {
                 reactive: false,
                 can_focus: false,
@@ -53,10 +65,10 @@ export class BoardMenu {
         }
     }
 
-    _addSection(group, openCount, tasks, moveTargets, editable) {
+    _addSection(group, tasks, moveTargets, editable) {
         this.section.addMenuItem(new GroupHeader({
             group,
-            count: openCount,
+            count: tasks.filter(t => !t.done).length,
             actions: editable ? {
                 onRename: this._actions.onRenameGroup,
                 onCyclePriority: this._actions.onCycleGroupPriority,
@@ -65,19 +77,25 @@ export class BoardMenu {
             } : null,
             grabFocus: this._grabFocus,
         }));
-        for (const task of tasks) {
-            this.section.addMenuItem(new TaskRow({
-                task,
-                moveTargets,
-                actions: {
-                    onToggle: this._actions.onToggleTask,
-                    onMove: this._actions.onMoveTask,
-                    onReorder: this._actions.onReorderTask,
-                    onDelete: this._actions.onDeleteTask,
-                    onRename: this._actions.onRenameTask,
-                    grabFocus: this._grabFocus,
-                },
-            }));
-        }
+        for (const task of tasks)
+            this._addRow(task, moveTargets, true);
+    }
+
+    _addRow(task, moveTargets, draggable) {
+        this.section.addMenuItem(new TaskRow({
+            task,
+            moveTargets,
+            draggable,
+            actions: {
+                onToggle: this._actions.onToggleTask,
+                onToggleStar: this._actions.onToggleStar,
+                onMove: this._actions.onMoveTask,
+                onReorderDrop: this._actions.onReorderDrop,
+                onDelete: this._actions.onDeleteTask,
+                onRename: this._actions.onRenameTask,
+                grabFocus: this._grabFocus,
+                autoscroll: this._actions.autoscroll,
+            },
+        }));
     }
 }

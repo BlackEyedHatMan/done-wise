@@ -16,12 +16,14 @@ class DoneWiseGroupHeader extends PopupMenu.PopupBaseMenuItem {
     /**
      * @param {object} params
      * @param {?object} params.group board group, or null for the Inbox
+     * @param {?{name: string, color: string}} params.special override name+accent
+     *   for virtual sections (e.g. the pinned Starred section)
      * @param {number} params.count open tasks in the group
      * @param {?object} params.actions {onRename, onCyclePriority, onMoveGroup, onDelete}
-     *   — null for non-editable headers (Inbox, provider groups)
+     *   — null for non-editable headers (Inbox, provider groups, virtual sections)
      * @param {(entry: St.Entry) => void} params.grabFocus focus helper from the indicator
      */
-    _init({group, count, actions, grabFocus}) {
+    _init({group, special = null, count, actions, grabFocus}) {
         super._init({reactive: false, can_focus: false});
         this._group = group;
         this._actions = actions;
@@ -34,7 +36,8 @@ class DoneWiseGroupHeader extends PopupMenu.PopupBaseMenuItem {
         const line = new St.BoxLayout({x_expand: true});
         this._column.add_child(line);
 
-        const color = group ? PRIORITY_COLORS[group.priority] : INBOX_COLOR;
+        const color = special?.color ??
+            (group ? PRIORITY_COLORS[group.priority] : INBOX_COLOR);
         // St's CSS subset has no reliable border-left — a real child widget is
         // the robust accent bar.
         line.add_child(new St.Widget({
@@ -43,7 +46,7 @@ class DoneWiseGroupHeader extends PopupMenu.PopupBaseMenuItem {
         }));
 
         line.add_child(new St.Label({
-            text: group ? group.name : 'Inbox',
+            text: special?.name ?? (group ? group.name : 'Inbox'),
             style_class: 'done-wise-group-header',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,

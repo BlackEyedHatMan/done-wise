@@ -27,6 +27,7 @@ function parseTask(raw, groupProviderId, index) {
         index,
         done: raw.done === true,
         doneAt: Number.isFinite(doneAtMs) ? doneAtMs : null,
+        starred: raw.starred === true,
     };
 }
 
@@ -89,6 +90,10 @@ export function pendingOperations(data) {
         if (t.titleDirty && t.providerId !== null && !t.providerArchived)
             ops.push({op: 'setTitle', taskId: t.id, providerId: t.providerId, title: t.title});
     }
+    for (const t of data.tasks) {
+        if (t.starredDirty && t.providerId !== null && !t.providerArchived)
+            ops.push({op: 'setStarred', taskId: t.id, providerId: t.providerId, starred: t.starred});
+    }
     for (const providerId of data.sync.pendingDeletes)
         ops.push({op: 'delete', providerId});
     return ops;
@@ -100,9 +105,11 @@ export function applyCreateResult(data, taskId, providerTask) {
     if (!task)
         return;
     task.providerId = typeof providerTask?.id === 'string' ? providerTask.id : task.id;
-    task.lastProvider = {groupId: null, position: 0, title: task.title, done: false};
-    // Completed before the create landed → the provider still owes a PATCH.
+    task.lastProvider = {groupId: null, position: 0, title: task.title, done: false, starred: false};
+    // Completed/starred before the create landed → the provider is still owed
+    // the corresponding PATCH.
     task.doneDirty = task.done;
+    task.starredDirty = task.starred;
     task.titleDirty = false; // the create carried the current title
 }
 
@@ -114,6 +121,16 @@ export function applyTitleResult(data, taskId) {
     task.titleDirty = false;
     if (task.lastProvider)
         task.lastProvider.title = task.title;
+}
+
+/** A queued starred-PATCH landed. (404s route through applyPatchResult.) */
+export function applyStarResult(data, taskId) {
+    const task = data.tasks.find(t => t.id === taskId);
+    if (!task)
+        return;
+    task.starredDirty = false;
+    if (task.lastProvider)
+        task.lastProvider.starred = task.starred;
 }
 
 /**
@@ -129,6 +146,7 @@ export function applyPatchResult(data, taskId, {notFound = false, idgen, now} = 
         return false;
     task.doneDirty = false;
     task.titleDirty = false;
+    task.starredDirty = false;
     if (!notFound) {
         if (task.lastProvider)
             task.lastProvider.done = task.done;
@@ -155,6 +173,9 @@ export function applyPatchResult(data, taskId, {notFound = false, idgen, now} = 
         providerArchived: false,
         doneDirty: false,
         titleDirty: false,
+        starred: false,
+        starredAt: null,
+        starredDirty: false,
         lastProvider: null,
     });
     return true;
@@ -250,6 +271,9 @@ export function reconcile(data, provider, {now}) {
             providerArchived: false,
             doneDirty: false,
             titleDirty: false,
+            starred: pt.starred,
+            starredAt: pt.starred ? now() : null,
+            starredDirty: false,
             lastProvider: snapshot(pt),
         });
     }
@@ -262,7 +286,10 @@ export function reconcile(data, provider, {now}) {
 }
 
 function snapshot(pt) {
-    return {groupId: pt.groupProviderId, position: pt.index, title: pt.title, done: pt.done};
+    return {
+        groupId: pt.groupProviderId, position: pt.index,
+        title: pt.title, done: pt.done, starred: pt.starred,
+    };
 }
 
 function mergeTask(task, pt, localIdByProviderGroup, now) {
@@ -292,6 +319,13 @@ function mergeTask(task, pt, localIdByProviderGroup, now) {
     if (!task.doneDirty && pt.done !== task.done) {
         task.done = pt.done;
         task.completedAt = pt.done ? pt.doneAt ?? now() : null;
+    }
+
+    // Starred mirrors done: local wins while its PATCH is pending, provider
+    // is authoritative once acknowledged.
+    if (!task.starredDirty && pt.starred !== task.starred) {
+        task.starred = pt.starred;
+        task.starredAt = pt.starred ? now() : null;
     }
 
     task.providerId = pt.providerId;

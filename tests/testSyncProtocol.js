@@ -3,7 +3,8 @@
 import {Board} from '../src/lib/board.js';
 import {
     parseProviderBoard, pendingOperations, applyCreateResult, applyPatchResult,
-    applyTitleResult, applyDeleteResult, reconcile, localGroupIdFor, SyncFormatError,
+    applyTitleResult, applyStarResult, applyDeleteResult, reconcile,
+    localGroupIdFor, SyncFormatError,
 } from '../src/lib/syncProtocol.js';
 import {assertEq, assertTrue, section, finish, testDeps} from './harness.js';
 
@@ -109,6 +110,50 @@ section('delete result');
     board.data.sync.pendingDeletes = ['p-a', 'p-b'];
     applyDeleteResult(board.data, 'p-a');
     assertEq(board.data.sync.pendingDeletes, ['p-b'], 'delete dequeued');
+}
+
+section('starred sync');
+{
+    const deps = testDeps();
+    const board = new Board(deps);
+    const t = board.addTask('focus me');
+    t.providerId = 'p-f';
+    t.lastProvider = {groupId: null, position: 0, title: 'focus me', done: false, starred: false};
+    board.setStarred(t.id, true, true);
+    const ops = pendingOperations(board.data);
+    assertEq(ops.map(o => o.op), ['setStarred'], 'star queues a setStarred op');
+    assertEq(ops[0].starred, true, 'op carries the star state');
+
+    // A pull saying not-starred must not clear the pending local star.
+    const pulled = parseProviderBoard(wireBoard({
+        revision: 2, groups: [], inbox: [wireTask('p-f', 'focus me')],
+    }));
+    reconcile(board.data, pulled, deps);
+    assertEq(board.data.tasks[0].starred, true, 'dirty star survives pull');
+
+    applyStarResult(board.data, t.id);
+    assertEq(t.starredDirty, false, 'ack clears starredDirty');
+    assertEq(t.lastProvider.starred, true, 'snapshot updated');
+
+    // After ack the provider may report a star change (e.g. another device).
+    const unstarred = parseProviderBoard(wireBoard({
+        revision: 3, groups: [], inbox: [wireTask('p-f', 'focus me', {starred: false})],
+    }));
+    reconcile(board.data, unstarred, deps);
+    assertEq(board.data.tasks[0].starred, false, 'provider star-state adopts after ack');
+
+    // Starred before its create landed → create result owes the PATCH.
+    const fresh = board.addTask('new + starred');
+    board.setStarred(fresh.id, true, true);
+    assertEq(fresh.starredDirty, false, 'unposted star not dirty yet');
+    applyCreateResult(board.data, fresh.id, {id: fresh.id});
+    assertEq(fresh.starredDirty, true, 'create result owes the starred PATCH');
+
+    // Parse: starred comes off the wire.
+    const wired = parseProviderBoard(wireBoard({
+        revision: 4, groups: [], inbox: [wireTask('p-s', 'starry', {starred: true})],
+    }));
+    assertEq(wired.tasks[0].starred, true, 'starred parsed from wire');
 }
 
 section('title rename sync');

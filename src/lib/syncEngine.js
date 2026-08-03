@@ -2,7 +2,7 @@ import GLib from 'gi://GLib';
 
 import {
     parseProviderBoard, pendingOperations, applyCreateResult, applyPatchResult,
-    applyTitleResult, applyDeleteResult, reconcile, SyncFormatError,
+    applyTitleResult, applyStarResult, applyDeleteResult, reconcile, SyncFormatError,
 } from './syncProtocol.js';
 import {SyncClient, SyncHttpError} from './syncClient.js';
 
@@ -160,6 +160,14 @@ export class SyncEngine {
                         {notFound: true, ...this._deps}) || structural;
                 } else {
                     applyTitleResult(data, op.taskId);
+                }
+            } else if (op.op === 'setStarred') {
+                const {notFound} = await this._client.patchTask(op.providerId, {starred: op.starred});
+                if (notFound) {
+                    structural = applyPatchResult(data, op.taskId,
+                        {notFound: true, ...this._deps}) || structural;
+                } else {
+                    applyStarResult(data, op.taskId);
                 }
             } else if (op.op === 'delete') {
                 await this._client.deleteTask(op.providerId);

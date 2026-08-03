@@ -80,12 +80,77 @@ section('move and reorder');
     board.moveTask(b.id, g.id);
     assertEq(board.tasksInGroup(g.id).map(t => t.title), ['a', 'b'],
         'append order in target group');
-    board.moveTaskBy(b.id, -1);
-    assertEq(board.tasksInGroup(g.id).map(t => t.title), ['b', 'a'], 'moved up');
-    board.moveTaskBy(b.id, -1);
+    board.moveTaskTo(b.id, 0);
+    assertEq(board.tasksInGroup(g.id).map(t => t.title), ['b', 'a'], 'moved to front');
+    board.moveTaskTo(b.id, -5);
     assertEq(board.tasksInGroup(g.id).map(t => t.title), ['b', 'a'], 'clamped at top');
+    board.moveTaskTo(b.id, 99);
+    assertEq(board.tasksInGroup(g.id).map(t => t.title), ['a', 'b'], 'clamped to end');
+    const c = board.addTask('c');
+    board.moveTask(c.id, g.id);
+    board.moveTaskTo(c.id, 1);
+    assertEq(board.tasksInGroup(g.id).map(t => t.title), ['a', 'c', 'b'], 'moved to middle');
     board.moveTask(a.id, 'nonexistent');
     assertEq(a.groupId, g.id, 'move to unknown group ignored');
+}
+
+section('moveTaskRelative (drag-drop commit)');
+{
+    const {board} = makeBoard();
+    const g = board.addGroup('Work');
+    const other = board.addGroup('Other');
+    const [a, b, c] = ['a', 'b', 'c'].map(t => board.addTask(t));
+    for (const t of [a, b, c])
+        board.moveTask(t.id, g.id);
+    // order: a, b, c
+    board.moveTaskRelative(c.id, a.id, true);
+    assertEq(board.tasksInGroup(g.id).map(t => t.title), ['c', 'a', 'b'],
+        'drop above first');
+    board.moveTaskRelative(c.id, b.id, false);
+    assertEq(board.tasksInGroup(g.id).map(t => t.title), ['a', 'b', 'c'],
+        'drop below last');
+    board.moveTaskRelative(a.id, b.id, false);
+    assertEq(board.tasksInGroup(g.id).map(t => t.title), ['b', 'a', 'c'],
+        'drop below adjusts for removed source');
+    const elsewhere = board.addTask('elsewhere');
+    board.moveTask(elsewhere.id, other.id);
+    board.moveTaskRelative(elsewhere.id, b.id, true);
+    assertEq(elsewhere.groupId, other.id, 'cross-group drop refused');
+    board.setDone(c.id, true);
+    board.moveTaskRelative(b.id, c.id, true);
+    assertEq(board.tasksInGroup(g.id).filter(t => !t.done).map(t => t.title),
+        ['b', 'a'], 'drop onto a done task refused');
+}
+
+section('starring');
+{
+    const {board} = makeBoard();
+    const g = board.addGroup('Work');
+    const tasks = ['s1', 's2', 's3', 's4'].map(t => board.addTask(t));
+    board.moveTask(tasks[0].id, g.id);
+
+    assertEq(board.setStarred(tasks[0].id, true), true, 'first star accepted');
+    assertEq(tasks[0].groupId, g.id, 'starring never touches groupId');
+    board.setStarred(tasks[1].id, true);
+    board.setStarred(tasks[2].id, true);
+    assertEq(board.setStarred(tasks[3].id, true), false, 'fourth star refused');
+    assertEq(board.starredTasks().map(t => t.title), ['s1', 's2', 's3'],
+        'starred order = starredAt order');
+
+    board.setStarred(tasks[0].id, false);
+    assertEq(tasks[0].starredAt, null, 'unstar clears starredAt');
+    assertEq(board.setStarred(tasks[3].id, true), true, 'freed slot reusable');
+
+    // Auto-unstar on tick frees the slot and owes a PATCH in synced mode.
+    tasks[1].providerId = 'p-s2';
+    board.setDone(tasks[1].id, true, true);
+    assertEq(tasks[1].starred, false, 'tick auto-unstars');
+    assertEq(tasks[1].starredDirty, true, 'auto-unstar owes a PATCH');
+    assertEq(board.starredTasks().length, 2, 'slot freed');
+
+    const done = board.addTask('already done');
+    board.setDone(done.id, true);
+    assertEq(board.setStarred(done.id, true), false, 'done tasks cannot be starred');
 }
 
 section('done tasks sink');

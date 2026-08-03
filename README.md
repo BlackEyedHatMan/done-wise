@@ -7,7 +7,9 @@ Intelligent task prioritization for a calmer, more focused day.
 DoneWise is a GNOME Shell extension: a top-bar checklist icon whose popup is
 your whole todo world — tasks organised into **context groups** (a project,
 "Errands", whatever fits), each group carrying a red / amber / green
-**priority** accent. Tick tasks off in place, quick-add new ones, done.
+**priority** accent. Tick tasks off in place, quick-add new ones, **star up
+to three** as today's focus (they pin to the top), drag rows to reorder,
+done.
 
 Standalone, *you* create the groups and set their priorities. Optionally,
 plug in an **AI agent** — any agent — and it names the groups, decides their

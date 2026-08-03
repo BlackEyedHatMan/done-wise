@@ -36,6 +36,26 @@
     min-width: 0;
 }
 
+/* Drag-and-drop: dimmed source row, floating clone, insertion indicator. */
+.done-wise-dragging {
+    opacity: 0.35;
+}
+
+.done-wise-drag-clone {
+    background-color: rgba(38, 162, 105, 0.25);
+    border: 1px solid #26a269;
+    border-radius: 8px;
+    padding: 4px 10px;
+}
+
+.done-wise-drop-above {
+    border-top: 2px solid #26a269;
+}
+
+.done-wise-drop-below {
+    border-bottom: 2px solid #26a269;
+}
+
 .done-wise-action-strip StButton {
     padding: 2px 8px;
     border-radius: 6px;

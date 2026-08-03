@@ -117,7 +117,7 @@ class DoneWiseIndicator extends PanelMenu.Button {
 
         // Scrollable board area. GNOME 46+: St.ScrollView.child (add_actor is gone).
         this._boardMenu = new BoardMenu({
-            actions: this._actions,
+            actions: {...this._actions, autoscroll: () => this._autoscroll()},
             grabFocus: e => this._grabFocus(e),
         });
         this._scroll = new St.ScrollView({
@@ -170,6 +170,23 @@ class DoneWiseIndicator extends PanelMenu.Button {
             return GLib.SOURCE_REMOVE;
         });
         this._idleIds.add(idle);
+    }
+
+    /**
+     * Best-effort edge autoscroll while dragging a row — DND provides none.
+     * Called from row handleDragOver, so it only runs during an active drag.
+     */
+    _autoscroll() {
+        const adjustment = this._scroll.vadjustment;
+        if (!adjustment)
+            return;
+        const [, pointerY] = global.get_pointer();
+        const [, scrollY] = this._scroll.get_transformed_position();
+        const EDGE = 36, STEP = 14;
+        if (pointerY - scrollY < EDGE)
+            adjustment.value -= STEP;
+        else if (scrollY + this._scroll.height - pointerY < EDGE)
+            adjustment.value += STEP;
     }
 
     /** @param {string} state one of IndicatorState */

@@ -96,6 +96,24 @@ Key popup mechanics (each is a known GNOME gotcha, handled deliberately):
 - Local groups get inline edit controls (rename, priority cycle, reorder, delete);
   provider-owned groups render header-only — their structure belongs to the agent.
 
+## Star Priority & drag-reorder (added 31 Jul 2026)
+
+- **Star Priority** — hover a task row to reveal a grey star; click to star
+  (max **3**, yellow when active). Starred tasks display in a pinned
+  "Starred" section above all groups (gold accent) while keeping their real
+  `groupId` — unstar (or complete: auto-unstar) and they render back in their
+  home group. `starred` is **synced**: an app-owned contract field exactly
+  like `done` (PATCHable by the app; stored value wins over agent PUTs; the
+  max-3 is an app convention). Agents read stars and lead with them for
+  "what's next".
+- **Drag-and-drop reorder** — rows drag to reorder within their own group
+  (replaces the ▲/▼ buttons; cross-group moves stay on the "⋯" menu). Built
+  on GNOME Shell's `DND.makeDraggable` with a 200ms threshold, a floating
+  clone (`getDragActor` — the real row stays put so the popup doesn't
+  re-layout), per-row drop delegates with an insertion-line indicator, and
+  best-effort edge autoscroll. Ordering remains local-only, as the arrows
+  were.
+
 ## Module layout
 
 ```

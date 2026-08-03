@@ -12,6 +12,7 @@
 import {MAX_TITLE_LENGTH, normalizePriority, Priority} from './constants.js';
 
 export const BOARD_VERSION = 1;
+export const MAX_STARRED = 3;
 
 export function createBoardData() {
     return {
@@ -61,6 +62,9 @@ export function normalize(json) {
                 providerArchived: t.providerArchived === true,
                 doneDirty: t.doneDirty === true,
                 titleDirty: t.titleDirty === true,
+                starred: t.starred === true,
+                starredAt: Number.isFinite(t.starredAt) ? t.starredAt : null,
+                starredDirty: t.starredDirty === true,
                 lastProvider: typeof t.lastProvider === 'object' ? t.lastProvider : null,
             });
         }
@@ -154,6 +158,9 @@ export class Board {
             providerArchived: false,
             doneDirty: false,
             titleDirty: false,
+            starred: false,
+            starredAt: null,
+            starredDirty: false,
             lastProvider: null,
         };
         this.data.tasks.push(task);
@@ -181,7 +188,41 @@ export class Board {
         task.completedAt = done ? this._now() : null;
         if (syncedMode && !task.providerArchived)
             task.doneDirty = true;
+        // Completing a starred task frees its star slot automatically.
+        if (done && task.starred) {
+            task.starred = false;
+            task.starredAt = null;
+            if (syncedMode && task.providerId !== null && !task.providerArchived)
+                task.starredDirty = true;
+        }
         this._emit(false);
+    }
+
+    /** Open starred tasks, in the order they were starred (the pinned section). */
+    starredTasks() {
+        return this.data.tasks.filter(t => t.starred && !t.done)
+            .sort((a, b) => (a.starredAt ?? 0) - (b.starredAt ?? 0));
+    }
+
+    /**
+     * Star/unstar a task. Starring never touches groupId — the pinned section
+     * is a filtered view, so an unstarred task is simply rendered back in its
+     * home group. At most MAX_STARRED open tasks may be starred.
+     *
+     * @returns {boolean} false when refused (limit reached)
+     */
+    setStarred(id, starred, syncedMode = false) {
+        const task = this.task(id);
+        if (!task || task.done || task.starred === starred)
+            return false;
+        if (starred && this.starredTasks().length >= MAX_STARRED)
+            return false;
+        task.starred = starred;
+        task.starredAt = starred ? this._now() : null;
+        if (syncedMode && task.providerId !== null && !task.providerArchived)
+            task.starredDirty = true;
+        this._emit(true);
+        return true;
     }
 
     /** Rename a task; the new title is pushed to the provider via PATCH. */
@@ -210,8 +251,11 @@ export class Board {
         this._emit(true);
     }
 
-    /** Reorder among the open tasks of its group; clamps at the edges. */
-    moveTaskBy(id, delta) {
+    /**
+     * Move a task to an absolute index among the open tasks of its group
+     * (drag-and-drop commit). Clamps to the list bounds; renumbers 0..n.
+     */
+    moveTaskTo(id, targetIndex) {
         const task = this.task(id);
         if (!task || task.done)
             return;
@@ -219,11 +263,36 @@ export class Board {
             .filter(t => t.groupId === task.groupId && !t.done)
             .sort((a, b) => a.position - b.position);
         const index = open.indexOf(task);
-        const target = index + delta;
-        if (index < 0 || target < 0 || target >= open.length)
+        const target = Math.max(0, Math.min(targetIndex, open.length - 1));
+        if (index < 0 || target === index)
             return;
         open.splice(index, 1);
         open.splice(target, 0, task);
+        open.forEach((t, i) => (t.position = i));
+        this._emit(true);
+    }
+
+    /**
+     * Drop-commit: place `id` above/below `targetId` among the open tasks of
+     * their (shared) group. The splice-reorder recipe: remove, then insert.
+     */
+    moveTaskRelative(id, targetId, above) {
+        const task = this.task(id);
+        const target = this.task(targetId);
+        if (!task || !target || id === targetId || task.done || target.done ||
+            task.groupId !== target.groupId)
+            return;
+        const open = this.data.tasks
+            .filter(t => t.groupId === task.groupId && !t.done)
+            .sort((a, b) => a.position - b.position);
+        const srcIndex = open.indexOf(task);
+        let desired = open.indexOf(target) + (above ? 0 : 1);
+        if (srcIndex < desired)
+            desired -= 1;
+        if (srcIndex === desired)
+            return;
+        open.splice(srcIndex, 1);
+        open.splice(desired, 0, task);
         open.forEach((t, i) => (t.position = i));
         this._emit(true);
     }
