@@ -153,6 +153,15 @@ func TestPatchOnlyDone(t *testing.T) {
 	if resp.StatusCode != 400 {
 		t.Errorf("unknown PATCH field: status %d, want 400", resp.StatusCode)
 	}
+	resp, body = request(t, ts, "PATCH", "/v1/tasks/t1", appToken, `{"starred": true}`, nil)
+	if resp.StatusCode != 200 || body["task"].(map[string]any)["starred"] != true {
+		t.Errorf("starred PATCH: status %d body %v", resp.StatusCode, body["task"])
+	}
+	resp, body = request(t, ts, "PATCH", "/v1/tasks/t1", appToken, `{"starred": false}`, nil)
+	if resp.StatusCode != 200 || body["task"].(map[string]any)["starred"] != nil {
+		t.Errorf("unstar PATCH: status %d starred %v (omitempty ⇒ absent)",
+			resp.StatusCode, body["task"].(map[string]any)["starred"])
+	}
 	resp, _ = request(t, ts, "PATCH", "/v1/tasks/ghost", appToken, `{"done": true}`, nil)
 	if resp.StatusCode != 404 {
 		t.Errorf("unknown task: status %d, want 404", resp.StatusCode)
@@ -251,6 +260,29 @@ func TestPutRejectsBlankedExistingTitle(t *testing.T) {
 	}
 	if title := board["inbox"].([]any)[0].(map[string]any)["title"]; title != "precious" {
 		t.Errorf("title damaged by rejected PUT: %v", title)
+	}
+}
+
+func TestPutCannotFlipStarred(t *testing.T) {
+	ts := newTestServer(t)
+	request(t, ts, "POST", "/v1/tasks", appToken, `{"id": "t1", "title": "focus"}`, nil)
+	request(t, ts, "PATCH", "/v1/tasks/t1", appToken, `{"starred": true}`, nil)
+	// Agent PUT echoes the task without starred (and another try with starred:false).
+	for _, echo := range []string{
+		`{"id": "t1", "title": "focus"}`,
+		`{"id": "t1", "title": "focus", "starred": false}`,
+	} {
+		put := fmt.Sprintf(`{"base_revision": 2, "groups": [{"id": "g", "name": "G",
+			"tasks": [%s]}], "inbox": []}`, echo)
+		resp, _ := request(t, ts, "PUT", "/v1/board", agentToken, put, nil)
+		if resp.StatusCode != 200 {
+			t.Fatalf("PUT: status %d", resp.StatusCode)
+		}
+		_, board := request(t, ts, "GET", "/v1/board", appToken, "", nil)
+		task := board["groups"].([]any)[0].(map[string]any)["tasks"].([]any)[0].(map[string]any)
+		if task["starred"] != true {
+			t.Fatalf("agent PUT (%s) must not clear starred; got %v", echo, task["starred"])
+		}
 	}
 }
 

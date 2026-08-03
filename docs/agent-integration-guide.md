@@ -80,6 +80,11 @@ already knows.
 - **`done` you send is ignored** for existing tasks. To "complete" something
   from your side after acknowledgement, `PATCH` is app-only; instead simply
   archive it, or leave completion to the user.
+- **`starred` is not yours either** — it's the owner's focus marker (the app
+  caps it at 3). Echo it untouched in your `PUT` (the complete-objects rule
+  already covers this; the provider ignores your value for known tasks
+  anyway). Do read it: starred tasks are what the owner cares about *right
+  now* — lead with them when asked "what's next".
 - **One agent per board.** Concurrent agents are out of scope; last `PUT`
   wins.
 

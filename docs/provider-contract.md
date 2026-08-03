@@ -35,6 +35,7 @@ Order of every array is display order — there are no position fields.
 | `id` | yes | Unique string. The app mints UUIDv4s; an agent may use any unique string. Never reused. |
 | `title` | yes | 1–500 characters. The agent may rewrite it (tidy phrasing). |
 | `done` | no (default `false`) | **App-owned** — see authority matrix. |
+| `starred` | no (default `false`) | **App-owned** — the owner's focus marker. The app allows at most 3 starred tasks (its convention; the provider stores, it doesn't enforce). Agents read stars — surface starred tasks first — and never set or clear them. |
 | `done_at` | — | RFC 3339 or `null`. Set/cleared by the provider when `done` flips. |
 | `created_at` | — | RFC 3339. Set by the provider if omitted on create. |
 | `created_by` | no | `"user"` or `"agent"`. Informative only. |
@@ -105,7 +106,7 @@ offline-queue replay safe. Response: the task object plus `"revision"`.
 
 ### `PATCH /v1/tasks/{id}` — app
 
-Body: `{"done": true|false}` and/or `{"title": "..."}` — **no other fields**;
+Body: `{"done": true|false}`, `{"title": "..."}` and/or `{"starred": true|false}` — **no other fields**;
 anything else is a `400`. The provider sets/clears `done_at` on done-flips. A `2xx`
 response is the app's **sync acknowledgement** for the change. `404` if the task no
 longer exists — the app must treat that as acknowledged (the agent already archived
@@ -171,6 +172,7 @@ body, `401` bad/missing token, `403` app token on `PUT /v1/board`, `404` unknown
 |---|---|---|
 | Task creation | app (and agent) | `POST` → inbox; agent-new tasks arrive via `PUT` |
 | `done`, `done_at` | **app** | On `PUT`, `done` in the payload is **ignored for tasks the provider already knows** — stored done-state always wins. (Unknown tasks may arrive `done: true`, e.g. imports.) |
+| `starred` | **app** | Same enforcement as `done`: stored value wins on `PUT` for known tasks; the app writes it via `PATCH`. |
 | Grouping, order, group set/names/priorities, `notes` | **agent** | Only writable via `PUT`; `PATCH` accepts only `done` and `title` |
 | `title` | shared | User renames arrive via `PATCH`; the agent's `PUT` may later rewrite (last write wins — renames are rare, tidying is the agent's job) |
 | Task deletion | agent (by omission from `PUT`), either side via `DELETE` | See merge rule 2 |

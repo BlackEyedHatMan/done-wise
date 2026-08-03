@@ -189,12 +189,19 @@ func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 	}
 	var done *bool
 	var title *string
+	var starred *bool
 	for key, raw := range req {
 		switch key {
 		case "done":
 			done = new(bool)
 			if err := json.Unmarshal(raw, done); err != nil {
 				writeError(w, http.StatusBadRequest, "invalid", "done must be a boolean")
+				return
+			}
+		case "starred":
+			starred = new(bool)
+			if err := json.Unmarshal(raw, starred); err != nil {
+				writeError(w, http.StatusBadRequest, "invalid", "starred must be a boolean")
 				return
 			}
 		case "title":
@@ -209,7 +216,7 @@ func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		default:
-			writeError(w, http.StatusBadRequest, "invalid", "PATCH accepts done and/or title")
+			writeError(w, http.StatusBadRequest, "invalid", "PATCH accepts done, title and/or starred")
 			return
 		}
 	}
@@ -233,6 +240,10 @@ func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 	}
 	if title != nil && task.Title != *title {
 		task.Title = *title
+		changed = true
+	}
+	if starred != nil && task.Starred != *starred {
+		task.Starred = *starred
 		changed = true
 	}
 	if changed {

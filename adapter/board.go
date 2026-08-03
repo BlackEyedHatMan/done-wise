@@ -17,13 +17,16 @@ const (
 )
 
 type Task struct {
-	ID        string     `json:"id"`
-	Title     string     `json:"title"`
-	Done      bool       `json:"done"`
-	DoneAt    *time.Time `json:"done_at"`
-	CreatedAt time.Time  `json:"created_at"`
-	CreatedBy string     `json:"created_by,omitempty"`
-	Notes     string     `json:"notes,omitempty"`
+	ID     string     `json:"id"`
+	Title  string     `json:"title"`
+	Done   bool       `json:"done"`
+	DoneAt *time.Time `json:"done_at"`
+	// Starred is the owner's focus marker (the app enforces a max of 3);
+	// app-owned like Done — agents read it, never write it.
+	Starred   bool      `json:"starred,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy string    `json:"created_by,omitempty"`
+	Notes     string    `json:"notes,omitempty"`
 	// Revision at which the provider first saw this task; drives merge rule 2
 	// (tasks the agent never saw are preserved, not deleted). Harmless on the
 	// wire — clients ignore unknown fields.
@@ -193,8 +196,8 @@ func Merge(stored *Board, payload PutPayload, now time.Time) *Board {
 			t.Title = t.Title[:MaxTitleLength]
 		}
 		if old, ok := known[t.ID]; ok {
-			// Rule 1: stored done-state, identity and provenance always win.
-			t.Done, t.DoneAt = old.Done, old.DoneAt
+			// Rule 1: stored done/starred-state, identity and provenance always win.
+			t.Done, t.DoneAt, t.Starred = old.Done, old.DoneAt, old.Starred
 			t.CreatedAt, t.CreatedBy, t.CreatedRev = old.CreatedAt, old.CreatedBy, old.CreatedRev
 		} else {
 			// Rule 3: agent-new task (may arrive done, e.g. imports).
