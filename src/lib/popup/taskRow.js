@@ -47,22 +47,25 @@ class DoneWiseTaskRow extends PopupMenu.PopupBaseMenuItem {
         const line = new St.BoxLayout({x_expand: true});
         this._column.add_child(line);
 
+        // Checkbox first (leftmost) — the star sits to its RIGHT so a fast
+        // tick down the list can never land on a star by mistake.
+        this._checkbox = new St.Icon({
+            icon_size: 16,
+            style: 'margin-right: 6px;',
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        line.add_child(this._checkbox);
+
         this._starButton = new St.Button({
             style_class: 'icon-button',
             can_focus: true,
             accessible_name: task.starred ? 'Unstar task' : 'Star task',
             y_align: Clutter.ActorAlign.CENTER,
+            style: 'margin-right: 4px;',
             child: new St.Icon({icon_size: 14}),
         });
         this._starButton.connect('clicked', () => this._actions.onToggleStar(this._task.id));
         line.add_child(this._starButton);
-
-        this._checkbox = new St.Icon({
-            icon_size: 16,
-            style: 'margin-right: 8px;',
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        line.add_child(this._checkbox);
 
         this._label = new St.Label({
             text: task.title,
